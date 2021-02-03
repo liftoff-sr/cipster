@@ -35,12 +35,21 @@ inline void stack_dump( const char* aContext ) {}      // nothing
 #ifdef HAVE_ICONV
 #include <iconv.h>
 
-#define UNICODE     "UTF16LE"   // UTF16LE is UNICODE with fixes to shortsighted-ness.
+#if defined(__APPLE__) || defined(_WIN32) || defined(WIN32)
+	#define UNICODE     "UTF-16LE"   // UTF16LE is UNICODE with fixes to shortsighted-ness.
+#else
+	#define UNICODE     "UTF16LE"   // UTF16LE is UNICODE with fixes to shortsighted-ness.
+#endif
 
-#define UTF8        "UTF8"      // The best way to deal with all unicode chars in a
+#if defined(_WIN32) || defined(WIN32)
+	#define UTF8        "UTF-8"      // The best way to deal with all unicode chars in a
                                 // platform independent way using 8 bit multibyte
                                 // characters.
-
+#else
+	#define UTF8        "UTF8"      // The best way to deal with all unicode chars in a
+                                // platform independent way using 8 bit multibyte
+                                // characters.
+#endif
 /**
  * Class IConv
  * is a wrapper to customize the general iconv library to convert to and
@@ -53,8 +62,11 @@ class IConv
 public:
     IConv()
     {
+	try{
         to_unicode = iconv_open( UNICODE, UTF8 );
-
+	} catch (...) {
+            throw std::runtime_error( "error from iconv_open(\"" UNICODE "\", \"" UTF8 "\")" );
+	}
         if( to_unicode == iconv_t(-1) )
             throw std::runtime_error( "error from iconv_open(\"" UNICODE "\", \"" UTF8 "\")" );
 
